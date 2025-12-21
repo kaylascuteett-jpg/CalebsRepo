@@ -1,4 +1,4 @@
-local H = Instance.new("Hint")
+local H = Instance.new("Message")
 H.Parent = workspace
 
 for i = 10, 1, -1 do
