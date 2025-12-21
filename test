@@ -1,1 +1,221 @@
-print("Hi")
+-- Load the aiming module
+local Aiming = loadstring(game:HttpGet("https://raw.githubusercontent.com/RFS-cmd/-/main/model"))()
+
+-- Optimized settings
+Aiming.TargetPart = {"UpperTorso"}  -- Or {"Head"} if you prefer
+Aiming.FOV = 40
+Aiming.FOVSides = 60
+Aiming.HitChance = 123432210000034873243247347324327123  -- Always hit
+Aiming.ShowFOV = true
+Aiming.VisibleCheck = false  -- Big FPS saver
+Aiming.TeamCheck(false)
+
+getgenv().Prediction = 0.000001  -- Starting prediction
+
+-- Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local CurrentCamera = Workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+
+-- DaHoodSettings
+local DaHoodSettings = {
+    SilentAim = true,
+    AimLock = false,
+    Prediction = getgenv().Prediction,
+    AimLockKeybind = Enum.KeyCode.E
+}
+getgenv().DaHoodSettings = DaHoodSettings
+getgenv().SilentAimEnabled = true
+
+-- Improved KO/Grabbed check
+function Aiming.Check()
+    if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then
+        return false
+    end
+    if not getgenv().SilentAimEnabled then
+        return false
+    end
+    local Character = Aiming.Character(Aiming.Selected)
+    if not Character then return false end
+    local BodyEffects = Character:FindFirstChild("BodyEffects")
+    local KOd = BodyEffects and BodyEffects:FindFirstChild("K.O") and BodyEffects["K.O"].Value
+    local Grabbed = Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
+    if KOd or Grabbed then
+        return false
+    end
+    return true
+end
+
+-- Camera-based Silent Aim (works on all executors)
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and Aiming.Check() and DaHoodSettings.SilentAim then
+        local SelectedPart = Aiming.SelectedPart
+        local PredictedPos = SelectedPart.Position + (SelectedPart.Velocity * DaHoodSettings.Prediction)
+        CurrentCamera.CFrame = CFrame.new(CurrentCamera.CFrame.Position, PredictedPos)
+    end
+end)
+
+-- Aimlock (optional, hold key)
+RunService:BindToRenderStep("AimLock", 0, function()
+    if DaHoodSettings.AimLock and Aiming.Check() and UserInputService:IsKeyDown(DaHoodSettings.AimLockKeybind) then
+        local SelectedPart = Aiming.SelectedPart
+        local Hit = SelectedPart.Position + (SelectedPart.Velocity * DaHoodSettings.Prediction)
+        CurrentCamera.CFrame = CFrame.lookAt(CurrentCamera.CFrame.Position, Hit)
+    end
+end)
+
+-- Throttled target update (lag fix)
+local lastTargetUpdate = 0
+RunService.Heartbeat:Connect(function()
+    Aiming.UpdateFOV()  -- Smooth FOV circle
+    local now = tick()
+    if now - lastTargetUpdate >= 0.066 then  -- ~15 updates/sec
+        Aiming.GetClosestPlayerToCursor()
+        lastTargetUpdate = now
+    end
+end)
+
+-- GUI (same as original, slightly cleaned)
+local gui = Instance.new("ScreenGui")
+gui.Name = "SilentAimUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.fromOffset(130, 32)
+toggleButton.Position = UDim2.new(1, -140, 0, 10)
+toggleButton.Text = "Silent Aim"
+toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.BorderSizePixel = 0
+toggleButton.BackgroundTransparency = 0.5
+toggleButton.Parent = gui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromOffset(260, 360)
+frame.Position = UDim2.new(1, -280, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Visible = false
+frame.Parent = gui
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 8)
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 10)
+layout.Parent = frame
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 10)
+padding.PaddingLeft = UDim.new(0, 10)
+padding.PaddingRight = UDim.new(0, 10)
+padding.Parent = frame
+
+local function makeContainer(labelText)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.fromOffset(240, 50)
+    container.BackgroundTransparency = 1
+    container.Parent = frame
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.fromOffset(240, 20)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Text = labelText
+    label.Parent = container
+    return container
+end
+
+local function makeBox(container, default, callback)
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.fromOffset(240, 25)
+    box.Position = UDim2.new(0, 0, 0, 25)
+    box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.BorderSizePixel = 0
+    box.Text = tostring(default)
+    box.ClearTextOnFocus = false
+    box.Parent = container
+    box.FocusLost:Connect(function()
+        local v = tonumber(box.Text)
+        if v then callback(v) end
+    end)
+end
+
+local function makeToggle(container, default, callback)
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.fromOffset(240, 25)
+    toggle.Position = UDim2.new(0, 0, 0, 25)
+    toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggle.BorderSizePixel = 0
+    toggle.Text = default and "ON" or "OFF"
+    toggle.Parent = container
+    local state = default
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        toggle.Text = state and "ON" or "OFF"
+        callback(state)
+    end)
+end
+
+-- GUI Controls
+do
+    local c = makeContainer("FOV Size")
+    makeBox(c, Aiming.FOV, function(v) Aiming.FOV = v end)
+    
+    local c = makeContainer("Hit Chance")
+    makeBox(c, Aiming.HitChance, function(v) Aiming.HitChance = v end)
+    
+    local c = makeContainer("Prediction")
+    makeBox(c, getgenv().Prediction, function(v)
+        getgenv().Prediction = v
+        DaHoodSettings.Prediction = v
+    end)
+    
+    local c = makeContainer("Show FOV")
+    makeToggle(c, Aiming.ShowFOV, function(v) Aiming.ShowFOV = v end)
+    
+    local c = makeContainer("Silent Aim")
+    makeToggle(c, true, function(v) getgenv().SilentAimEnabled = v end)
+    
+    local c = makeContainer("Wall Check")
+    makeToggle(c, false, function(v) Aiming.VisibleCheck = v end)
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
+
+-- AUTO PREDICTION LOOP
+spawn(function()
+    while true do
+        task.wait(0.5)
+        if getgenv().AutoPrediction then  -- Set this to true if you want auto
+            local Stats = game:GetService("Stats")
+            local pingStr = Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+            local ping = tonumber(string.split(pingStr, " ")[1])  -- Fixed split
+            if ping then
+                local pred
+                if ping > 200 then pred = 0.187
+                elseif ping > 180 then pred = 0.168
+                elseif ping > 140 then pred = 0.160
+                elseif ping > 110 then pred = 0.159
+                elseif ping > 105 then pred = 0.138
+                elseif ping > 90 then pred = 0.136
+                elseif ping > 80 then pred = 0.134
+                elseif ping > 70 then pred = 0.131
+                elseif ping > 60 then pred = 0.123
+                elseif ping > 50 then pred = 0.1225
+                else pred = 0.126 end
+                getgenv().Prediction = pred
+                DaHoodSettings.Prediction = pred
+            end
+        end
+    end
+end)
