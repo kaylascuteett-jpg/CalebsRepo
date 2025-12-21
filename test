@@ -1,4 +1,11 @@
-local M = Instance.new("Message", workspace)
-M.Text = "You are using an unsupported executor. That means, this script wont work. I will release a fix for ALL executors soon.. stay tuned! This message will get deleted in 10 seconds."
-task.wait(10)
-M:Destroy()
+local H = Instance.new("Hint")
+H.Parent = workspace
+
+for i = 10, 1, -1 do
+	H.Text = "You are using an unsupported executor. This script will not work.\n" ..
+	         "A fix for ALL executors is coming soon. Stay tuned!\n" ..
+	         "This message will be deleted in " .. i .. " seconds."
+	task.wait(1)
+end
+
+H:Destroy()
