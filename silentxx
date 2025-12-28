@@ -22,8 +22,8 @@ Workspace:WaitForChild("Terrain").WaterWaveSize = 0
 Workspace:WaitForChild("Terrain").WaterWaveSpeed = 0
 
 -- Reduce lighting effects for FPS
---Lighting.Brightness = 1
---Lighting.ClockTime = 12
+Lighting.Brightness = 1
+Lighting.ClockTime = 12
 
 -- Load the aiming module
 local Aiming = loadstring(game:HttpGet("https://raw.githubusercontent.com/RFS-cmd/-/main/model"))()
