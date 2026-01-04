@@ -1,0 +1,101 @@
+--// Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+--// Player
+local player = Players.LocalPlayer
+
+--// Toggle state
+local antiStompEnabled = true
+
+--// GUI Setup
+local gui = Instance.new("ScreenGui")
+gui.Name = "AntiStompGui"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.fromScale(0.6, 0.08)
+label.Position = UDim2.fromScale(0.2, 0.1)
+label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+label.TextColor3 = Color3.fromRGB(255, 255, 255)
+label.TextScaled = true
+label.Font = Enum.Font.SourceSansBold
+label.BorderSizePixel = 0
+label.BackgroundTransparency = 1
+label.TextTransparency = 1
+label.Parent = gui
+
+--// Tween settings
+local fadeIn = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local fadeOut = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+--// Message handler
+local currentTweenId = 0
+local function showMessage(text)
+	currentTweenId += 1
+	local id = currentTweenId
+
+	label.Text = text
+
+	-- Fade in
+	TweenService:Create(label, fadeIn, {
+		TextTransparency = 0,
+		BackgroundTransparency = 0.3
+	}):Play()
+
+	-- Auto fade out after 2 seconds
+	task.delay(2, function()
+		if id ~= currentTweenId then return end
+
+		TweenService:Create(label, fadeOut, {
+			TextTransparency = 1,
+			BackgroundTransparency = 1
+		}):Play()
+	end)
+end
+
+--// Initial message
+showMessage("Calebs Anti Injected! The default is set to TRUE. Press P to toggle it.")
+
+--// Character logic
+local function setupCharacter(character)
+	local humanoid = character:WaitForChild("Humanoid")
+	local bodyEffects = character:WaitForChild("BodyEffects")
+	local ko = bodyEffects:WaitForChild("K.O")
+
+	if ko.Value == true and antiStompEnabled then
+		humanoid.Health = 0
+	end
+
+	ko:GetPropertyChangedSignal("Value"):Connect(function()
+		if ko.Value == true and antiStompEnabled then
+			humanoid.Health = 0
+		end
+	end)
+end
+
+--// Toggle input (P)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if UserInputService:GetFocusedTextBox() then return end
+
+	if input.KeyCode == Enum.KeyCode.P then
+		antiStompEnabled = not antiStompEnabled
+
+		if antiStompEnabled then
+			showMessage("Calebs Anti Stomp ON")
+		else
+			showMessage("Calebs Anti Stomp OFF")
+		end
+	end
+end)
+
+--// Initial character
+if player.Character then
+	setupCharacter(player.Character)
+end
+
+--// Respawns
+player.CharacterAdded:Connect(setupCharacter)
