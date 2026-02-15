@@ -1,0 +1,708 @@
+-- Caleb's Script Hub - Modern UI - Complete LocalScript
+-- Parent this to CoreGui (works best via executor)
+
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CalebsScriptHubModern"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = CoreGui
+
+-- Main Frame (card-like, dark, rounded, shadowed)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 420, 0, 580)
+mainFrame.Position = UDim2.new(0.5, 0, 1.2, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+mainFrame.BackgroundTransparency = 0.08
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 24)
+mainCorner.Parent = mainFrame
+
+-- Shadow
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(1, 60, 1, 60)
+shadow.Position = UDim2.new(0, -30, 0, -30)
+shadow.BackgroundColor3 = Color3.new(0,0,0)
+shadow.BackgroundTransparency = 0.68
+shadow.ZIndex = -1
+shadow.Parent = mainFrame
+
+local shadowCorner = Instance.new("UICorner")
+shadowCorner.CornerRadius = UDim.new(0, 32)
+shadowCorner.Parent = shadow
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(60, 60, 90)
+uiStroke.Transparency = 0.45
+uiStroke.Thickness = 1.8
+uiStroke.Parent = mainFrame
+
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 64)
+titleBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Caleb's Script Hub"
+titleLabel.TextColor3 = Color3.new(1,1,1)
+titleLabel.TextScaled = true
+titleLabel.Font = Enum.Font.GothamBlack
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+local titlePad = Instance.new("UIPadding")
+titlePad.PaddingLeft = UDim.new(0, 24)
+titlePad.Parent = titleLabel
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 44, 0, 44)
+closeBtn.Position = UDim2.new(1, -54, 0.5, 0)
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.fromRGB(220, 80, 80)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = titleBar
+
+closeBtn.MouseButton1Click:Connect(function()
+    local tweenOut = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Position = UDim2.new(0.5,0,1.2,0)
+    })
+    tweenOut:Play()
+    tweenOut.Completed:Wait()
+    screenGui:Destroy()
+end)
+
+-- Scrolling Content
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1,0,1,-64)
+scrollingFrame.Position = UDim2.new(0,0,0,64)
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.ScrollBarThickness = 5
+scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(80,80,100)
+scrollingFrame.Parent = mainFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0,12)
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = scrollingFrame
+
+local contentPad = Instance.new("UIPadding")
+contentPad.PaddingTop = UDim.new(0,20)
+contentPad.PaddingBottom = UDim.new(0,20)
+contentPad.PaddingLeft = UDim.new(0,20)
+contentPad.PaddingRight = UDim.new(0,20)
+contentPad.Parent = scrollingFrame
+
+listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    scrollingFrame.CanvasSize = UDim2.new(0,0,0,listLayout.AbsoluteContentSize.Y + 40)
+end)
+
+-- Sounds
+local clickSound = Instance.new("Sound")
+clickSound.SoundId = "rbxassetid://9048375037"
+clickSound.Volume = 0.5
+clickSound.Parent = screenGui
+
+local hoverSound = Instance.new("Sound")
+hoverSound.SoundId = "rbxassetid://12221959"
+hoverSound.Volume = 0.3
+hoverSound.Parent = screenGui
+
+local function playClick()
+    local s = clickSound:Clone()
+    s.Parent = screenGui
+    s:Play()
+    task.delay(1.5, function() s:Destroy() end)
+end
+
+local function playHover()
+    local s = hoverSound:Clone()
+    s.Parent = screenGui
+    s:Play()
+    task.delay(1.5, function() s:Destroy() end)
+end
+
+-- Modern Button
+local function createButton(text, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1,0,0,56)
+    button.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    button.Text = text
+    button.TextColor3 = Color3.new(1,1,1)
+    button.Font = Enum.Font.GothamSemibold
+    button.TextSize = 18
+    button.Parent = scrollingFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 16)
+    corner.Parent = button
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(100,180,255)
+    stroke.Transparency = 0.5
+    stroke.Thickness = 1.5
+    stroke.Parent = button
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 160, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 220))
+    }
+    gradient.Parent = button
+
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.25), {
+            BackgroundColor3 = Color3.fromRGB(0, 150, 255),
+            Size = UDim2.new(1,0,0,60)
+        }):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.25), {Transparency = 0.2}):Play()
+        playHover()
+    end)
+
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.25), {
+            BackgroundColor3 = Color3.fromRGB(0, 120, 255),
+            Size = UDim2.new(1,0,0,56)
+        }):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.25), {Transparency = 0.5}):Play()
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        playClick()
+        if callback then callback() end
+    end)
+
+    return button
+end
+
+-- Prompt System
+local promptOverlay = Instance.new("Frame")
+promptOverlay.Size = UDim2.new(1,0,1,0)
+promptOverlay.BackgroundColor3 = Color3.new(0,0,0)
+promptOverlay.BackgroundTransparency = 0.65
+promptOverlay.Visible = false
+promptOverlay.Parent = screenGui
+
+local promptFrame = Instance.new("Frame")
+promptFrame.Size = UDim2.new(0, 360, 0, 240)
+promptFrame.Position = UDim2.new(0.5,0,0.5,0)
+promptFrame.AnchorPoint = Vector2.new(0.5,0.5)
+promptFrame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+promptFrame.Parent = promptOverlay
+
+local pCorner = Instance.new("UICorner")
+pCorner.CornerRadius = UDim.new(0, 20)
+pCorner.Parent = promptFrame
+
+local pStroke = Instance.new("UIStroke")
+pStroke.Color = Color3.fromRGB(70,70,90)
+pStroke.Thickness = 1.5
+pStroke.Parent = promptFrame
+
+local pTitle = Instance.new("TextLabel")
+pTitle.Size = UDim2.new(1,0,0,50)
+pTitle.BackgroundTransparency = 1
+pTitle.TextColor3 = Color3.new(1,1,1)
+pTitle.TextScaled = true
+pTitle.Font = Enum.Font.GothamBold
+pTitle.Parent = promptFrame
+
+local pDesc = Instance.new("TextLabel")
+pDesc.Size = UDim2.new(1,-40,0,60)
+pDesc.Position = UDim2.new(0,20,0,60)
+pDesc.BackgroundTransparency = 1
+pDesc.TextColor3 = Color3.fromRGB(180,180,200)
+pDesc.TextScaled = true
+pDesc.TextWrapped = true
+pDesc.Parent = promptFrame
+
+local pInput = Instance.new("TextBox")
+pInput.Size = UDim2.new(1,-40,0,44)
+pInput.Position = UDim2.new(0,20,0,130)
+pInput.BackgroundColor3 = Color3.fromRGB(30,30,35)
+pInput.TextColor3 = Color3.new(1,1,1)
+pInput.TextScaled = true
+pInput.Font = Enum.Font.Gotham
+pInput.Parent = promptFrame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 12)
+inputCorner.Parent = pInput
+
+local btnContainer = Instance.new("Frame")
+btnContainer.Size = UDim2.new(1,-40,0,50)
+btnContainer.Position = UDim2.new(0,20,1,-70)
+btnContainer.BackgroundTransparency = 1
+btnContainer.Parent = promptFrame
+
+local btnLayout = Instance.new("UIListLayout")
+btnLayout.FillDirection = Enum.FillDirection.Horizontal
+btnLayout.Padding = UDim.new(0,15)
+btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+btnLayout.Parent = btnContainer
+
+local function createPromptButton(text, color, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.45,0,1,0)
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextScaled = true
+    btn.Parent = btnContainer
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 12)
+    c.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        playClick()
+        promptOverlay.Visible = false
+        if callback then callback() end
+    end)
+    return btn
+end
+
+-- Features
+
+createButton("Silent Aim", function()
+    -- Load the aiming module
+local Aiming = loadstring(game:HttpGet("https://raw.githubusercontent.com/RFS-cmd/-/main/model"))()
+
+-- Highly Optimized Settings (MAX FPS)
+Aiming.TargetPart = {"UpperTorso"}       -- Single part = fastest targeting
+Aiming.FOV = 40
+Aiming.FOVSides = 30                     -- Low sides = huge FPS boost, still looks good
+Aiming.FOVColour = Color3.fromRGB(0, 147, 255)
+Aiming.HitChance = 123432210000034873243247347324327123  -- Always hit
+Aiming.ShowFOV = true
+Aiming.VisibleCheck = false              -- Disabled = massive FPS saver
+Aiming.TeamCheck(false)                  -- No team check
+
+getgenv().Prediction = 0.000001           -- Good default (adjust manually in GUI if needed)
+
+-- Services (cached)
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local CurrentCamera = Workspace.CurrentCamera
+
+-- DaHoodSettings
+local DaHoodSettings = {
+    SilentAim = true,
+    AimLock = false,
+    Prediction = getgenv().Prediction,
+    AimLockKeybind = Enum.KeyCode.E
+}
+getgenv().DaHoodSettings = DaHoodSettings
+getgenv().SilentAimEnabled = true
+
+-- Improved KO/Grabbed check
+function Aiming.Check()
+    if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then return false end
+    if not getgenv().SilentAimEnabled then return false end
+    local Character = Aiming.Character(Aiming.Selected)
+    if not Character then return false end
+    local BodyEffects = Character:FindFirstChild("BodyEffects")
+    local KOd = BodyEffects and BodyEffects:FindFirstChild("K.O") and BodyEffects["K.O"].Value
+    local Grabbed = Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
+    if KOd or Grabbed then return false end
+    return true
+end
+
+-- Silent Aim Hook
+local __index
+__index = hookmetamethod(game, "__index", function(t, k)
+    if t:IsA("Mouse") and (k == "Hit" or k == "Target") and Aiming.Check() then
+        local SelectedPart = Aiming.SelectedPart
+        if DaHoodSettings.SilentAim then
+            local Hit = SelectedPart.CFrame + (SelectedPart.Velocity * DaHoodSettings.Prediction)
+            return (k == "Hit" and Hit or SelectedPart)
+        end
+    end
+    return __index(t, k)
+end)
+
+-- Optional Aimlock
+RunService:BindToRenderStep("AimLock", 0, function()
+    if DaHoodSettings.AimLock and Aiming.Check() and UserInputService:IsKeyDown(DaHoodSettings.AimLockKeybind) then
+        local SelectedPart = Aiming.SelectedPart
+        local Hit = SelectedPart.CFrame + (SelectedPart.Velocity * DaHoodSettings.Prediction)
+        CurrentCamera.CFrame = CFrame.lookAt(CurrentCamera.CFrame.Position, Hit.Position)
+    end
+end)
+
+-- ===== ULTRA LOW LAG TARGET UPDATE =====
+local lastTargetUpdate = 0
+local lastFOVSettings = {Aiming.FOV, Aiming.FOVSides, Aiming.ShowFOV, tostring(Aiming.FOVColour)}
+
+RunService.Heartbeat:Connect(function()
+    -- Only update FOV circle if settings changed or visible (super cheap)
+    local currentSettings = {Aiming.FOV, Aiming.FOVSides, Aiming.ShowFOV, tostring(Aiming.FOVColour)}
+    if Aiming.ShowFOV and currentSettings ~= lastFOVSettings then
+        Aiming.UpdateFOV()
+        lastFOVSettings = currentSettings
+    end
+
+    local now = tick()
+    if now - lastTargetUpdate >= 0.15 then  -- ~8-10 updates/sec = buttery smooth + MAX FPS
+        Aiming.GetClosestPlayerToCursor()
+        lastTargetUpdate = now
+    end
+end)
+
+-- ===== GUI (unchanged, minimal overhead) =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "SilentAimUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.fromOffset(130, 32)
+toggleButton.Position = UDim2.new(1, -140, 0, 10)
+toggleButton.Text = "Silent Aim"
+toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.BorderSizePixel = 0
+toggleButton.BackgroundTransparency = 0.5
+toggleButton.Parent = gui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromOffset(260, 360)
+frame.Position = UDim2.new(1, -280, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Visible = false
+frame.Parent = gui
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 8)
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 10)
+layout.Parent = frame
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 10)
+padding.PaddingLeft = UDim.new(0, 10)
+padding.PaddingRight = UDim.new(0, 10)
+padding.Parent = frame
+
+local function makeContainer(labelText)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.fromOffset(240, 50)
+    container.BackgroundTransparency = 1
+    container.Parent = frame
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.fromOffset(240, 20)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Text = labelText
+    label.Parent = container
+    return container
+end
+
+local function makeBox(container, default, callback)
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.fromOffset(240, 25)
+    box.Position = UDim2.new(0, 0, 0, 25)
+    box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.BorderSizePixel = 0
+    box.Text = tostring(default)
+    box.ClearTextOnFocus = false
+    box.Parent = container
+    box.FocusLost:Connect(function()
+        local v = tonumber(box.Text)
+        if v then callback(v) end
+    end)
+end
+
+local function makeToggle(container, default, callback)
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.fromOffset(240, 25)
+    toggle.Position = UDim2.new(0, 0, 0, 25)
+    toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggle.BorderSizePixel = 0
+    toggle.Text = default and "ON" or "OFF"
+    toggle.Parent = container
+    local state = default
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        toggle.Text = state and "ON" or "OFF"
+        callback(state)
+    end)
+end
+
+-- GUI Controls
+do
+    local c = makeContainer("FOV Size")
+    makeBox(c, Aiming.FOV, function(v) Aiming.FOV = v end)
+
+    local c = makeContainer("Hit Chance")
+    makeBox(c, Aiming.HitChance, function(v) Aiming.HitChance = v end)
+
+    local c = makeContainer("Prediction")
+    makeBox(c, getgenv().Prediction, function(v)
+        getgenv().Prediction = v
+        DaHoodSettings.Prediction = v
+    end)
+
+    local c = makeContainer("Show FOV")
+    makeToggle(c, Aiming.ShowFOV, function(v) Aiming.ShowFOV = v end)
+
+    local c = makeContainer("Silent Aim")
+    makeToggle(c, true, function(v) getgenv().SilentAimEnabled = v end)
+
+    local c = makeContainer("Wall Check")
+    makeToggle(c, false, function(v) Aiming.VisibleCheck = v end)
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
+end)
+
+createButton("Hitbox Expander", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/NLzUsLme"))()
+end)
+
+createButton("Speed Glitch", function()
+    pTitle.Text = "Speed Glitch"
+    pDesc.Text = "Input the speed of the speed glitch.\nDefault is 1."
+    pInput.PlaceholderText = "1"
+    pInput.Text = "1"
+    promptOverlay.Visible = true
+
+    local okBtn = createPromptButton("OK", Color3.fromRGB(0,140,255), function()
+        local speed = tonumber(pInput.Text) or 1
+
+        local flying = false
+        local key = Enum.KeyCode.F
+
+        local character = player.Character or player.CharacterAdded:Wait()
+        local root = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+
+        player.CharacterAdded:Connect(function(newChar)
+            character = newChar
+            root = newChar:WaitForChild("HumanoidRootPart")
+            humanoid = newChar:WaitForChild("Humanoid")
+        end)
+
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe then return end
+            if input.KeyCode == key then
+                flying = not flying
+            end
+        end)
+
+        RunService.RenderStepped:Connect(function()
+            if flying and root and humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                root.CFrame = root.CFrame + humanoid.MoveDirection * speed
+            end
+        end)
+    end)
+
+    createPromptButton("Back", Color3.fromRGB(60,60,70), function() end)
+end)
+
+createButton("Bubbly Animation Pack", function()
+    local function apply(char)
+        local animate = char:WaitForChild("Animate")
+        animate.idle.Animation1.AnimationId = "rbxassetid://910004836"
+        animate.idle.Animation2.AnimationId = "rbxassetid://910009958"
+        animate.run.RunAnim.AnimationId = "rbxassetid://910025107"
+        animate.jump.JumpAnim.AnimationId = "rbxassetid://910016857"
+        animate.fall.FallAnim.AnimationId = "rbxassetid://910001910"
+    end
+
+    if player.Character then apply(player.Character) end
+    player.CharacterAdded:Connect(apply)
+end)
+
+createButton("SwagMode", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/lerkermer/lua-projects/master/SwagModeV002"))()
+end)
+
+createButton("Hood Customs / Fly", function()
+    loadstring(game:HttpGet("https://rawscripts.net/raw/Hood-Customs-free-script-working-on-all-copies-32459"))()
+end)
+
+createButton("Autokill", function()
+    pTitle.Text = "Autokill"
+    pDesc.Text = "DISTANCE ABOVE TARGET"
+    pInput.PlaceholderText = "50"
+    pInput.Text = "50"
+    promptOverlay.Visible = true
+
+    local okBtn = createPromptButton("OK", Color3.fromRGB(0,140,255), function()
+        local distance = tonumber(pInput.Text) or 50
+
+        if CoreGui:FindFirstChild("DraggablePlayerListGui") then
+            CoreGui.DraggablePlayerListGui:Destroy()
+        end
+        task.wait(0.1)
+
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "DraggablePlayerListGui"
+        sg.Parent = CoreGui
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0,200,0,300)
+        frame.Position = UDim2.new(0.5,-100,0.5,-150)
+        frame.BackgroundColor3 = Color3.fromRGB(30,30,35)
+        frame.Parent = sg
+
+        local dragging, dragInput, dragStart, startPos
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
+                local conn; conn = input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                        conn:Disconnect()
+                    end
+                end)
+            end
+        end)
+
+        frame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                dragInput = input
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+
+        local scroll = Instance.new("ScrollingFrame")
+        scroll.Size = UDim2.new(1,0,0.8,0)
+        scroll.BackgroundTransparency = 1
+        scroll.ScrollBarThickness = 6
+        scroll.Parent = frame
+
+        local uiList = Instance.new("UIListLayout")
+        uiList.Padding = UDim.new(0,2)
+        uiList.Parent = scroll
+
+        local attachBtn = Instance.new("TextButton")
+        attachBtn.Size = UDim2.new(0.5,0,0.2,0)
+        attachBtn.Position = UDim2.new(0,0,0.8,0)
+        attachBtn.BackgroundColor3 = Color3.fromRGB(0,170,255)
+        attachBtn.Text = "Attach"
+        attachBtn.TextColor3 = Color3.new(1,1,1)
+        attachBtn.Visible = false
+        attachBtn.Parent = frame
+
+        local detachBtn = Instance.new("TextButton")
+        detachBtn.Size = UDim2.new(0.5,0,0.2,0)
+        detachBtn.Position = UDim2.new(0.5,0,0.8,0)
+        detachBtn.BackgroundColor3 = Color3.fromRGB(255,85,0)
+        detachBtn.Text = "Detach"
+        detachBtn.TextColor3 = Color3.new(1,1,1)
+        detachBtn.Visible = false
+        detachBtn.Parent = frame
+
+        local selectedPlayer = nil
+        local connection = nil
+
+        local function addPlayer(plr)
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1,0,0,50)
+            btn.BackgroundColor3 = Color3.fromRGB(45,45,50)
+            btn.Text = ""
+            btn.Parent = scroll
+
+            local img = Instance.new("ImageLabel")
+            img.Size = UDim2.new(0,48,0,48)
+            img.Position = UDim2.new(0,2,0,1)
+            img.BackgroundTransparency = 1
+            img.Image = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+            img.Parent = btn
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1,-52,1,0)
+            lbl.Position = UDim2.new(0,52,0,0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = plr.Name
+            lbl.TextColor3 = Color3.new(1,1,1)
+            lbl.TextSize = 14
+            lbl.Parent = btn
+
+            btn.MouseButton1Click:Connect(function()
+                selectedPlayer = plr
+                attachBtn.Visible = true
+                detachBtn.Visible = true
+            end)
+        end
+
+        local function removePlayer(plr)
+            if selectedPlayer == plr then
+                selectedPlayer = nil
+                attachBtn.Visible = false
+                detachBtn.Visible = false
+                if connection then connection:Disconnect() connection = nil end
+            end
+        end
+
+        for _, plr in Players:GetPlayers() do addPlayer(plr) end
+        Players.PlayerAdded:Connect(addPlayer)
+        Players.PlayerRemoving:Connect(removePlayer)
+
+        attachBtn.MouseButton1Click:Connect(function()
+            if selectedPlayer and selectedPlayer.Character and player.Character then
+                if connection then connection:Disconnect() end
+                connection = RunService.Heartbeat:Connect(function()
+                    local target = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    local myRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                    if target and myRoot then
+                        myRoot.CFrame = target.CFrame + Vector3.new(0, distance, 0)
+                    end
+                end)
+            end
+        end)
+
+        detachBtn.MouseButton1Click:Connect(function()
+            if connection then connection:Disconnect() connection = nil end
+        end)
+    end)
+
+    createPromptButton("Back", Color3.fromRGB(60,60,70), function() end)
+end)
+
+-- Open Animation
+task.wait(0.1)
+TweenService:Create(mainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Position = UDim2.new(0.5, 0, 0.5, 0)
+}):Play()
