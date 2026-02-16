@@ -491,6 +491,172 @@ createButton("Hitbox Expander", function()
     loadstring(game:HttpGet("https://pastebin.com/raw/NLzUsLme"))()
 end)
 
+createbutton("Autobuy Knife", function()
+    local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- CONFIG
+local TARGET_TOOL_NAME = "[Knife]"
+local MODEL_NAME = "[Knife] - $169" -- Shop model name
+local SHOP_FOLDER = "Shop"
+
+-- Helper: wait for character + HRP
+local function getCharacter()
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+	return char, hrp
+end
+
+-- Helper: check if tool exists
+local function hasTool()
+	return player.Backpack:FindFirstChild(TARGET_TOOL_NAME)
+		or (player.Character and player.Character:FindFirstChild(TARGET_TOOL_NAME))
+end
+
+-- Helper: find any BasePart inside a model
+local function getAnyBasePart(model)
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			return obj
+		end
+	end
+	return nil
+end
+
+-- Main logic
+local function onRespawn()
+	task.wait(1) -- let backpack load
+
+	if hasTool() then
+		print("Knife already owned, skipping.")
+		return
+	end
+
+	local char, hrp = getCharacter()
+	local originalCFrame = hrp.CFrame
+
+	-- Locate ClickDetector safely
+	local shop = workspace:FindFirstChild("Ignored", true)
+	if shop then
+		shop = shop:FindFirstChild(SHOP_FOLDER, true)
+	end
+
+	local knifeModel = shop and shop:FindFirstChild(MODEL_NAME, true)
+	if not knifeModel then
+		warn("Knife model not found.")
+		return
+	end
+
+	local clickDetector = knifeModel:FindFirstChildWhichIsA("ClickDetector", true)
+	if not clickDetector then
+		warn("ClickDetector not found inside knife model.")
+		return
+	end
+
+	local part = getAnyBasePart(knifeModel)
+	if not part then
+		warn("No BasePart found inside knife model.")
+		return
+	end
+
+	-- Teleport to knife
+	hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+	task.wait(0.3)
+
+	-- Click it
+	fireclickdetector(clickDetector)
+	task.wait(0.3)
+
+	-- Teleport back
+	hrp.CFrame = originalCFrame
+	print("Auto-purchased [Knife] and returned.")
+end
+
+-- Run every respawn
+player.CharacterAdded:Connect(onRespawn)
+
+-- Also run now if already spawned
+if player.Character then
+	onRespawn()
+end
+end)
+
+createButton("Macro Emote", function()
+    --// SERVICES
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+--// PLAYER
+local player = Players.LocalPlayer
+
+--// EXTREME SETTINGS
+local FORWARD_OFFSET = -7.5 -- VERY far forward
+local MOVE_TIME = 0.12
+local HOLD_TIME = 0.6      -- stays out in front longer
+local RETURN_TIME = 0.25
+
+local waist
+local originalC0
+local busy = false
+
+--// SETUP CHARACTER
+local function setupCharacter(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    if humanoid.RigType ~= Enum.HumanoidRigType.R15 then return end
+
+    local upperTorso = character:WaitForChild("UpperTorso")
+    waist = upperTorso:WaitForChild("Waist")
+    originalC0 = waist.C0
+end
+
+player.CharacterAdded:Connect(setupCharacter)
+if player.Character then
+    setupCharacter(player.Character)
+end
+
+--// SHOVE + HOLD
+local function shoveTorso()
+    if not waist or busy then return end
+    busy = true
+
+    local shovedC0 =
+        originalC0 *
+        CFrame.new(0, 0, FORWARD_OFFSET)
+
+    local shoveTween = TweenService:Create(
+        waist,
+        TweenInfo.new(MOVE_TIME, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out),
+        { C0 = shovedC0 }
+    )
+
+    local returnTween = TweenService:Create(
+        waist,
+        TweenInfo.new(RETURN_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        { C0 = originalC0 }
+    )
+
+    shoveTween:Play()
+    shoveTween.Completed:Wait()
+
+    -- HOLD IT OUT THERE
+    task.wait(HOLD_TIME)
+
+    returnTween:Play()
+    returnTween.Completed:Wait()
+
+    busy = false
+end
+
+--// INPUT
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.L then
+        shoveTorso()
+    end
+end)
+end)
+
 createButton("Speed Glitch", function()
     pTitle.Text = "Speed Glitch"
     pDesc.Text = "Input the speed of the speed glitch.\nDefault is 1."
