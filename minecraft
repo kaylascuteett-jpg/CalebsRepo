@@ -491,7 +491,7 @@ createButton("Hitbox Expander", function()
     loadstring(game:HttpGet("https://pastebin.com/raw/NLzUsLme"))()
 end)
 
-createbutton("Autobuy Knife", function()
+createButton("Autobuy Knife", function()
     local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
@@ -582,79 +582,94 @@ end
 end)
 
 createButton("Macro Emote", function()
-    --// SERVICES
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
---// PLAYER
-local player = Players.LocalPlayer
+    pTitle.Text = "Macro Emote"
+    pDesc.Text = "What button do you wanna press to macro?"
+    pInput.PlaceholderText = "Example: L"
+    pInput.Text = ""
+    promptOverlay.Visible = true
 
---// EXTREME SETTINGS
-local FORWARD_OFFSET = -7.5 -- VERY far forward
-local MOVE_TIME = 0.12
-local HOLD_TIME = 0.6      -- stays out in front longer
-local RETURN_TIME = 0.25
+    createPromptButton("OK", Color3.fromRGB(0,140,255), function()
 
-local waist
-local originalC0
-local busy = false
+        local keyName = string.upper(pInput.Text)
+        if keyName == "" then return end
 
---// SETUP CHARACTER
-local function setupCharacter(character)
-    local humanoid = character:WaitForChild("Humanoid")
-    if humanoid.RigType ~= Enum.HumanoidRigType.R15 then return end
+        local chosenKey
+        pcall(function()
+            chosenKey = Enum.KeyCode[keyName]
+        end)
 
-    local upperTorso = character:WaitForChild("UpperTorso")
-    waist = upperTorso:WaitForChild("Waist")
-    originalC0 = waist.C0
-end
+        if not chosenKey then
+            warn("Invalid key.")
+            return
+        end
 
-player.CharacterAdded:Connect(setupCharacter)
-if player.Character then
-    setupCharacter(player.Character)
-end
+        local TweenService = game:GetService("TweenService")
+        local UserInputService = game:GetService("UserInputService")
+        local player = game:GetService("Players").LocalPlayer
 
---// SHOVE + HOLD
-local function shoveTorso()
-    if not waist or busy then return end
-    busy = true
+        local FORWARD_OFFSET = -7.5
+        local MOVE_TIME = 0.12
+        local HOLD_TIME = 0.6
+        local RETURN_TIME = 0.25
 
-    local shovedC0 =
-        originalC0 *
-        CFrame.new(0, 0, FORWARD_OFFSET)
+        local waist
+        local originalC0
+        local busy = false
 
-    local shoveTween = TweenService:Create(
-        waist,
-        TweenInfo.new(MOVE_TIME, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out),
-        { C0 = shovedC0 }
-    )
+        local function setupCharacter(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            if humanoid.RigType ~= Enum.HumanoidRigType.R15 then return end
+            local upperTorso = character:WaitForChild("UpperTorso")
+            waist = upperTorso:WaitForChild("Waist")
+            originalC0 = waist.C0
+        end
 
-    local returnTween = TweenService:Create(
-        waist,
-        TweenInfo.new(RETURN_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        { C0 = originalC0 }
-    )
+        player.CharacterAdded:Connect(setupCharacter)
+        if player.Character then
+            setupCharacter(player.Character)
+        end
 
-    shoveTween:Play()
-    shoveTween.Completed:Wait()
+        local function shoveTorso()
+            if not waist or busy then return end
+            busy = true
 
-    -- HOLD IT OUT THERE
-    task.wait(HOLD_TIME)
+            local shovedC0 = originalC0 * CFrame.new(0, 0, FORWARD_OFFSET)
 
-    returnTween:Play()
-    returnTween.Completed:Wait()
+            local shoveTween = TweenService:Create(
+                waist,
+                TweenInfo.new(MOVE_TIME, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out),
+                {C0 = shovedC0}
+            )
 
-    busy = false
-end
+            local returnTween = TweenService:Create(
+                waist,
+                TweenInfo.new(RETURN_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {C0 = originalC0}
+            )
 
---// INPUT
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.L then
-        shoveTorso()
-    end
-end)
+            shoveTween:Play()
+            shoveTween.Completed:Wait()
+
+            task.wait(HOLD_TIME)
+
+            returnTween:Play()
+            returnTween.Completed:Wait()
+
+            busy = false
+        end
+
+        UserInputService.InputBegan:Connect(function(input, gp)
+            if gp then return end
+            if input.KeyCode == chosenKey then
+                shoveTorso()
+            end
+        end)
+
+    end)
+
+    createPromptButton("Back", Color3.fromRGB(60,60,70), function() end)
+
 end)
 
 createButton("Speed Glitch", function()
