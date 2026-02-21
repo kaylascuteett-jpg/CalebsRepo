@@ -1,0 +1,322 @@
+-- ts file was generated at discord.gg/25ms
+
+local u1 = {}
+local v2 = {
+    Enabled = false,
+    Keybind = 'C',
+    Part = 'HumanoidRootPart',
+    KOCheck = false,
+    WallCheck = false,
+    CrewCheck = false,
+    ForceFieldCheck = false,
+    Prediction = 0,
+    Fov = {
+        Properties = {
+            Visible = false,
+            Transparency = 1,
+            Filled = false,
+            Radius = 100,
+        },
+    },
+}
+
+u1.SilentAim = v2
+u1.Misc = {
+    WalkSpeed = {
+        Enabled = false,
+        Speed = 100,
+        Keybind = 'X',
+    },
+    Extra = {
+        NoSlowDown = false,
+        NoJumpCoolDown = false,
+        KeepInv = false,
+    },
+}
+
+local _Players = game:GetService('Players')
+local _LocalPlayer = _Players.LocalPlayer
+local v5 = _LocalPlayer
+local u6 = _LocalPlayer.GetMouse(v5)
+local _CurrentCamera = workspace.CurrentCamera
+local _RunService = game:GetService('RunService')
+local _UserInputService = game:GetService('UserInputService')
+local _Workspace = game:GetService('Workspace')
+
+local function u13()
+    
+end
+
+
+
+local _Circle = Drawing.new('Circle')
+
+_Circle.Visible = u1.SilentAim.Fov.Properties.Visible
+_Circle.Color = Color3.fromRGB(255, 255, 255)
+_Circle.Transparency = u1.SilentAim.Fov.Properties.Transparency
+_Circle.Thickness = 2.5
+_Circle.Filled = u1.SilentAim.Fov.Properties.Filled
+_Circle.NumSides = 100
+_Circle.Radius = u1.SilentAim.Fov.Properties.Radius
+
+_RunService.RenderStepped:Connect(function()
+    local v17 = _UserInputService:GetMouseLocation()
+
+    _Circle.Position = Vector2.new(v17.X, v17.Y)
+end)
+
+local function u20(p18)
+    local v19 = false
+
+    if p18 and (p18.Character and u1.SilentAim.KOCheck) and p18.Character:FindFirstChild('BodyEffects') then
+        if p18.Character.BodyEffects:FindFirstChild('K.O') then
+            v19 = p18.Character.BodyEffects['K.O'].Value
+        elseif p18.Character.BodyEffects:FindFirstChild('KO') then
+            v19 = p18.Character.BodyEffects.KO.Value
+        end
+    end
+
+    return v19
+end
+local function u22(p21)
+    return p21:FindFirstChild('DataFolder') and (p21.DataFolder:FindFirstChild('Information') and (p21.DataFolder.Information:FindFirstChild('Crew') and (_Players.LocalPlayer:FindFirstChild('DataFolder') and (_Players.LocalPlayer.DataFolder:FindFirstChild('Information') and (_Players.LocalPlayer.DataFolder.Information:FindFirstChild('Crew') and (_Players.LocalPlayer.DataFolder.Information.Crew.Value ~= nil and (p21.DataFolder.Information.Crew.Value ~= nil and (p21.DataFolder.Information.Crew.Value ~= '' and _Players.LocalPlayer.DataFolder.Information.Crew.Value ~= '')))))))) and true or false
+end
+local function u24(p23)
+    return p23:FindFirstChild('ForceField') and true or false
+end
+local function u27(p25)
+    local _Character2 = p25.Character
+
+    if _Character2 and _Character2:FindFirstChild('HumanoidRootPart') then
+        return not _Workspace:FindPartOnRay(Ray.new(_CurrentCamera.CFrame.Position, (_Character2.HumanoidRootPart.Position - _CurrentCamera.CFrame.Position).unit * (_Character2.HumanoidRootPart.Position - _CurrentCamera.CFrame.Position).magnitude), _Character2)
+    else
+        return false
+    end
+end
+local function u37()
+    if not u1.SilentAim.Enabled then
+        return nil
+    end
+
+    local _Radius = u1.SilentAim.Fov.Properties.Radius
+    local v29 = _Players
+    local v30, v31, v32 = pairs(v29:GetPlayers())
+    local v33 = nil
+
+    while true do
+        local v34
+
+        v32, v34 = v30(v31, v32)
+
+        if v32 == nil then
+            break
+        end
+        if v34 ~= _LocalPlayer and v34.Character and (v34.Character:FindFirstChild(u1.SilentAim.Part) and not (u20(v34) and u1.SilentAim.KOCheck) and not (u1.SilentAim.CrewCheck and u22(v34) or u1.SilentAim.ForceFieldCheck and u24(v34))) then
+            local v35, _ = _CurrentCamera:WorldToScreenPoint(v34.Character[u1.SilentAim.Part].Position)
+
+            if not u1.SilentAim.WallCheck or u27(v34) then
+                local _Magnitude = (_Circle.Position - Vector2.new(v35.X, v35.Y)).Magnitude
+
+                if _Magnitude < _Radius then
+                    v33 = v34
+                    _Radius = _Magnitude
+                end
+            end
+        end
+    end
+
+    return v33
+end
+
+local v38 = getrawmetatable(game)
+
+setreadonly(v38, false)
+
+local ___index = v38.__index
+
+function v38.__index(p40, p41)
+    if not checkcaller() and (p40 == u6 and u1.SilentAim.Enabled) then
+        if p41 == 'Hit' then
+            local v42 = u37()
+
+            if v42 and v42.Character then
+                local v43 = v42.Character[u1.SilentAim.Part]
+                local v44 = v43.Position + v43.Velocity * u1.SilentAim.Prediction
+
+                return CFrame.new(v44)
+            end
+        elseif p41 == 'Target' and game.PlaceId == 2788229376 then
+            local v45 = u37()
+
+            if v45 and v45.Character then
+                local v46 = v45.Character[u1.SilentAim.Part]
+                local v47 = v46.Position + v46.Velocity * u1.SilentAim.Prediction
+
+                return CFrame.new(v47)
+            end
+        end
+    end
+
+    return ___index(p40, p41)
+end
+
+local _Name = game:GetService('MarketplaceService'):GetProductInfo(game.PlaceId).Name
+local v49 = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+local u50 = loadstring(game:HttpGet(v49 .. 'Library.lua'))()
+local v51 = loadstring(game:HttpGet(v49 .. 'addons/ThemeManager.lua'))()
+local v52 = loadstring(game:HttpGet(v49 .. 'addons/SaveManager.lua'))()
+local v53 = u50
+local v54 = u50.CreateWindow(v53, {
+    Title = 'Calebs Silent Aim 2.0',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2,
+})
+local v55 = u50
+
+u50.Notify(v55, 'Silent Loaded 4 the kids on ' .. _Name, 2)
+
+local v56 = {
+    Main = v54:AddTab('Combat'),
+    ['UI Settings'] = v54:AddTab('UI Settings'),
+}
+local _SilentAim = v56.Main:AddLeftGroupbox('Silent Aim')
+local _Checks = v56.Main:AddRightGroupbox('Checks')
+local _WalkSpeed = v56.Main:AddRightGroupbox('WalkSpeed DISABLED!')
+
+_SilentAim:AddToggle('Silent Aim', {
+    Text = 'Enabled',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p60)
+        u1.SilentAim.Enabled = p60
+    end,
+})
+_SilentAim:AddDropdown('HitPartDropdown', {
+    Values = {
+        'Head',
+        'HumanoidRootPart',
+        'UpperTorso',
+        'LowerTorso',
+    },
+    Default = 2,
+    Multi = false,
+    Text = 'Hit Part',
+    Tooltip = nil,
+    Callback = function(p61)
+        u1.SilentAim.Part = p61
+    end,
+})
+_SilentAim:AddInput('PredictionTextBox', {
+    Text = 'Prediction',
+    Default = '0',
+    Placeholder = 'Enter prediction value...',
+    Callback = function(p62)
+        local v63 = tonumber(p62)
+
+        if v63 then
+            u1.SilentAim.Prediction = v63
+        end
+    end,
+})
+_SilentAim:AddDivider()
+_SilentAim:AddToggle('FOVVisibleToggle', {
+    Text = 'Show FOV',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p64)
+        u1.SilentAim.Fov.Properties.Visible = p64
+        _Circle.Visible = p64
+    end,
+})
+_SilentAim:AddToggle('FOVFilledToggle', {
+    Text = 'Filled',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p65)
+        u1.SilentAim.Fov.Properties.Filled = p65
+        _Circle.Filled = p65
+    end,
+})
+_SilentAim:AddSlider('FOVSlider', {
+    Text = 'FOV',
+    Default = 0,
+    Min = 0,
+    Max = 500,
+    Rounding = 0,
+    Compact = false,
+    Callback = function(p66)
+        u1.SilentAim.Fov.Properties.Radius = p66
+        _Circle.Radius = p66
+    end,
+})
+_SilentAim:AddSlider('FOVTransparencySlider', {
+    Text = 'FOV Transparency',
+    Default = 1,
+    Min = 0,
+    Max = 1,
+    Rounding = 2,
+    Compact = false,
+    Callback = function(p67)
+        u1.SilentAim.Fov.Properties.Transparency = p67
+        _Circle.Transparency = p67
+    end,
+})
+_Checks:AddToggle('KoCheck', {
+    Text = 'KO Check',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p68)
+        u1.SilentAim.KOCheck = p68
+    end,
+})
+_Checks:AddToggle('Wall Check', {
+    Text = 'Wall Check',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p69)
+        u1.SilentAim.WallCheck = p69
+    end,
+})
+_Checks:AddToggle('Crew Check', {
+    Text = 'Crew Check',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p70)
+        u1.SilentAim.CrewCheck = p70
+    end,
+})
+_Checks:AddToggle('ForceField Check', {
+    Text = 'ForceField Check',
+    Default = false,
+    Tooltip = nil,
+    Callback = function(p71)
+        u1.SilentAim.ForceFieldCheck = p71
+    end,
+})
+
+local _Menu = v56['UI Settings']:AddLeftGroupbox('Menu')
+
+_Menu:AddButton('Unload', function()
+    u50:Unload()
+end)
+_Menu:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', {
+    Default = 'Rig',
+    NoUI = true,
+    Text = 'Menu keybind',
+})
+
+u50.ToggleKeybind = Options.MenuKeybind
+
+v51:SetLibrary(u50)
+v52:SetLibrary(u50)
+v52:IgnoreThemeSettings()
+v52:SetIgnoreIndexes({
+    'MenuKeybind',
+})
+v51:SetFolder('MyScriptHub')
+v52:SetFolder('MyScriptHub/specific-game')
+v52:BuildConfigSection(v56['UI Settings'])
+v51:ApplyToTab(v56['UI Settings'])
+v52:LoadAutoloadConfig()
