@@ -1,50 +1,62 @@
+-- Silent Aim Script with Custom Toggle Button Keybind (Cleaned & Fixed Version)
+
 -- Load the aiming module
 local Aiming = loadstring(game:HttpGet("https://raw.githubusercontent.com/RFS-cmd/-/main/model"))()
 
 -- Highly Optimized Settings (MAX FPS)
-Aiming.TargetPart = {"UpperTorso"}       -- Single part = fastest targeting
-Aiming.FOV = 40
-Aiming.FOVSides = 30                     -- Low sides = huge FPS boost, still looks good
-Aiming.FOVColour = Color3.fromRGB(0, 147, 255)
-Aiming.HitChance = 123432210000034873243247347324327123  -- Always hit
-Aiming.ShowFOV = true
-Aiming.VisibleCheck = false              -- Disabled = massive FPS saver
-Aiming.TeamCheck(false)                  -- No team check
+Aiming.TargetPart     = {"UpperTorso"}                    -- Single part = fastest
+Aiming.FOV            = 40
+Aiming.FOVSides       = 30                                -- Low sides = huge FPS boost
+Aiming.FOVColour      = Color3.fromRGB(0, 147, 255)
+Aiming.HitChance      = 123432210000034873243247347324327123  -- Always hit
+Aiming.ShowFOV        = true
+Aiming.VisibleCheck   = false                             -- Off = massive FPS saver
+Aiming.TeamCheck(false)                                   -- No team check
 
-getgenv().Prediction = 0.000001           -- Good default (adjust manually in GUI if needed)
+getgenv().Prediction = 0.000001                           -- Default prediction
 
--- Services (cached)
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
+-- Services
+local Players          = game:GetService("Players")
+local Workspace        = game:GetService("Workspace")
+local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local CurrentCamera = Workspace.CurrentCamera
+local LocalPlayer      = Players.LocalPlayer
+local CurrentCamera    = Workspace.CurrentCamera
 
--- DaHoodSettings
+-- Settings
 local DaHoodSettings = {
-    SilentAim = true,
-    AimLock = false,
-    Prediction = getgenv().Prediction,
+    SilentAim      = true,
+    AimLock        = false,
+    Prediction     = getgenv().Prediction,
     AimLockKeybind = Enum.KeyCode.E
 }
 getgenv().DaHoodSettings = DaHoodSettings
 getgenv().SilentAimEnabled = true
 
+-- Custom key to toggle visibility of the main "Silent Aim" button
+getgenv().ButtonToggleKey = Enum.KeyCode.RightControl     -- Default: Right Ctrl
+
 -- Improved KO/Grabbed check
 function Aiming.Check()
-    if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then return false end
-    if not getgenv().SilentAimEnabled then return false end
+    if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then
+        return false
+    end
+    if not getgenv().SilentAimEnabled then
+        return false
+    end
+
     local Character = Aiming.Character(Aiming.Selected)
     if not Character then return false end
+
     local BodyEffects = Character:FindFirstChild("BodyEffects")
     local KOd = BodyEffects and BodyEffects:FindFirstChild("K.O") and BodyEffects["K.O"].Value
     local Grabbed = Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
+
     if KOd or Grabbed then return false end
     return true
 end
 
--- Silent Aim Hook
+-- Silent Aim Hook (Mouse.Hit / Mouse.Target spoof)
 local __index
 __index = hookmetamethod(game, "__index", function(t, k)
     if t:IsA("Mouse") and (k == "Hit" or k == "Target") and Aiming.Check() then
@@ -57,7 +69,7 @@ __index = hookmetamethod(game, "__index", function(t, k)
     return __index(t, k)
 end)
 
--- Optional Aimlock
+-- Optional Aimlock (camera follows target when holding key)
 RunService:BindToRenderStep("AimLock", 0, function()
     if DaHoodSettings.AimLock and Aiming.Check() and UserInputService:IsKeyDown(DaHoodSettings.AimLockKeybind) then
         local SelectedPart = Aiming.SelectedPart
@@ -66,31 +78,33 @@ RunService:BindToRenderStep("AimLock", 0, function()
     end
 end)
 
--- ===== ULTRA LOW LAG TARGET UPDATE =====
+-- Ultra low-lag target & FOV update
 local lastTargetUpdate = 0
 local lastFOVSettings = {Aiming.FOV, Aiming.FOVSides, Aiming.ShowFOV, tostring(Aiming.FOVColour)}
 
 RunService.Heartbeat:Connect(function()
-    -- Only update FOV circle if settings changed or visible (super cheap)
+    -- Update FOV circle only when needed
     local currentSettings = {Aiming.FOV, Aiming.FOVSides, Aiming.ShowFOV, tostring(Aiming.FOVColour)}
     if Aiming.ShowFOV and currentSettings ~= lastFOVSettings then
         Aiming.UpdateFOV()
         lastFOVSettings = currentSettings
     end
 
+    -- Target update ~6-7 times per second (smooth + low CPU)
     local now = tick()
-    if now - lastTargetUpdate >= 0.15 then  -- ~8-10 updates/sec = buttery smooth + MAX FPS
+    if now - lastTargetUpdate >= 0.15 then
         Aiming.GetClosestPlayerToCursor()
         lastTargetUpdate = now
     end
 end)
 
--- ===== GUI (unchanged, minimal overhead) =====
+-- ===== GUI =====
 local gui = Instance.new("ScreenGui")
 gui.Name = "SilentAimUI"
 gui.ResetOnSpawn = false
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+-- Floating toggle button (top-right)
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.fromOffset(130, 32)
 toggleButton.Position = UDim2.new(1, -140, 0, 10)
@@ -101,6 +115,7 @@ toggleButton.BorderSizePixel = 0
 toggleButton.BackgroundTransparency = 0.5
 toggleButton.Parent = gui
 
+-- Settings frame
 local frame = Instance.new("Frame")
 frame.Size = UDim2.fromOffset(260, 360)
 frame.Position = UDim2.new(1, -280, 0, 50)
@@ -122,11 +137,13 @@ padding.PaddingLeft = UDim.new(0, 10)
 padding.PaddingRight = UDim.new(0, 10)
 padding.Parent = frame
 
+-- Helper: Container with label
 local function makeContainer(labelText)
     local container = Instance.new("Frame")
     container.Size = UDim2.fromOffset(240, 50)
     container.BackgroundTransparency = 1
     container.Parent = frame
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.fromOffset(240, 20)
     label.BackgroundTransparency = 1
@@ -134,9 +151,11 @@ local function makeContainer(labelText)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Text = labelText
     label.Parent = container
+
     return container
 end
 
+-- Helper: Number input box
 local function makeBox(container, default, callback)
     local box = Instance.new("TextBox")
     box.Size = UDim2.fromOffset(240, 25)
@@ -147,12 +166,14 @@ local function makeBox(container, default, callback)
     box.Text = tostring(default)
     box.ClearTextOnFocus = false
     box.Parent = container
+
     box.FocusLost:Connect(function()
         local v = tonumber(box.Text)
         if v then callback(v) end
     end)
 end
 
+-- Helper: ON/OFF toggle button
 local function makeToggle(container, default, callback)
     local toggle = Instance.new("TextButton")
     toggle.Size = UDim2.fromOffset(240, 25)
@@ -162,6 +183,7 @@ local function makeToggle(container, default, callback)
     toggle.BorderSizePixel = 0
     toggle.Text = default and "ON" or "OFF"
     toggle.Parent = container
+
     local state = default
     toggle.MouseButton1Click:Connect(function()
         state = not state
@@ -170,30 +192,106 @@ local function makeToggle(container, default, callback)
     end)
 end
 
--- GUI Controls
-do
-    local c = makeContainer("FOV Size")
-    makeBox(c, Aiming.FOV, function(v) Aiming.FOV = v end)
+-- Keybind input for toggling the main button visibility
+local function makeKeybindBox()
+    local c = makeContainer("Silent Aim Button Keybind")
 
-    local c = makeContainer("Hit Chance")
-    makeBox(c, Aiming.HitChance, function(v) Aiming.HitChance = v end)
+    local keyBox = Instance.new("TextBox")
+    keyBox.Size = UDim2.fromOffset(240, 25)
+    keyBox.Position = UDim2.new(0, 0, 0, 25)
+    keyBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    keyBox.TextColor3 = Color3.fromRGB(200, 255, 200)
+    keyBox.BorderSizePixel = 0
+    keyBox.Text = getgenv().ButtonToggleKey.Name
+    keyBox.ClearTextOnFocus = false
+    keyBox.Parent = c
 
-    local c = makeContainer("Prediction")
-    makeBox(c, getgenv().Prediction, function(v)
-        getgenv().Prediction = v
-        DaHoodSettings.Prediction = v
+    keyBox.FocusLost:Connect(function(enterPressed)
+        if not enterPressed then return end
+
+        local input = keyBox.Text:lower():gsub("%s+", ""):gsub("[^%w]", "")
+
+        local aliases = {
+            -- Arrows
+            up = "Up", down = "Down", left = "Left", right = "Right",
+            -- Modifiers
+            ctrl = "LeftControl", lctrl = "LeftControl", rctrl = "RightControl",
+            control = "LeftControl", alt = "LeftAlt", shift = "LeftShift",
+            -- Special
+            enter = "Return", esc = "Escape", del = "Delete", ins = "Insert",
+            home = "Home", ["end"] = "End", pgup = "PageUp", pgdn = "PageDown",
+            caps = "CapsLock", capslock = "CapsLock",
+            -- Function keys
+            f1 = "F1", f2 = "F2", f3 = "F3", f4 = "F4", f5 = "F5", f6 = "F6",
+            f7 = "F7", f8 = "F8", f9 = "F9", f10 = "F10", f11 = "F11", f12 = "F12",
+            -- Letters
+            a = "A", b = "B", c = "C", d = "D", e = "E", f = "F", g = "G", h = "H",
+            i = "I", j = "J", k = "K", l = "L", m = "M", n = "N", o = "O", p = "P",
+            q = "Q", r = "R", s = "S", t = "T", u = "U", v = "V", w = "W", x = "X",
+            y = "Y", z = "Z",
+            -- Numbers
+            ["1"] = "One", ["2"] = "Two", ["3"] = "Three", ["4"] = "Four", ["5"] = "Five",
+            ["6"] = "Six", ["7"] = "Seven", ["8"] = "Eight", ["9"] = "Nine", ["0"] = "Zero",
+            -- Numpad
+            num0 = "KeypadZero", num1 = "KeypadOne", num2 = "KeypadTwo", num3 = "KeypadThree",
+            num4 = "KeypadFour", num5 = "KeypadFive", num6 = "KeypadSix", num7 = "KeypadSeven",
+            num8 = "KeypadEight", num9 = "KeypadNine",
+            -- Misc
+            space = "Space", tilde = "Tilde", minus = "Minus", equals = "Equals",
+        }
+
+        if aliases[input] then
+            input = aliases[input]
+        end
+
+        local success, key = pcall(function()
+            return Enum.KeyCode[input]
+        end)
+
+        if success and key and key ~= Enum.KeyCode.Unknown then
+            getgenv().ButtonToggleKey = key
+            keyBox.TextColor3 = Color3.fromRGB(150, 255, 150)
+            keyBox.Text = key.Name
+        else
+            keyBox.TextColor3 = Color3.fromRGB(255, 150, 150)
+            keyBox.Text = "Invalid"
+            task.delay(1.4, function()
+                if keyBox and keyBox.Parent then
+                    keyBox.TextColor3 = Color3.fromRGB(200, 255, 200)
+                    keyBox.Text = getgenv().ButtonToggleKey.Name
+                end
+            end)
+        end
     end)
-
-    local c = makeContainer("Show FOV")
-    makeToggle(c, Aiming.ShowFOV, function(v) Aiming.ShowFOV = v end)
-
-    local c = makeContainer("Silent Aim")
-    makeToggle(c, true, function(v) getgenv().SilentAimEnabled = v end)
-
-    local c = makeContainer("Wall Check")
-    makeToggle(c, false, function(v) Aiming.VisibleCheck = v end)
 end
 
+-- Create all GUI elements in logical order
+do
+    makeBox(     makeContainer("FOV Size"),      Aiming.FOV,               function(v) Aiming.FOV = v end)
+    makeBox(     makeContainer("Hit Chance"),    Aiming.HitChance,          function(v) Aiming.HitChance = v end)
+    makeBox(     makeContainer("Prediction"),    getgenv().Prediction,      function(v) getgenv().Prediction = v DaHoodSettings.Prediction = v end)
+    makeToggle(  makeContainer("Show FOV"),      Aiming.ShowFOV,            function(v) Aiming.ShowFOV = v end)
+    makeToggle(  makeContainer("Silent Aim"),    true,                      function(v) getgenv().SilentAimEnabled = v end)
+    makeToggle(  makeContainer("Wall Check"),    false,                     function(v) Aiming.VisibleCheck = v end)
+
+    -- Keybind setter at the bottom
+    makeKeybindBox()
+end
+
+-- Open/close settings frame
 toggleButton.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
+
+-- Custom hotkey to hide/show the floating toggle button (and auto-hide frame)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == getgenv().ButtonToggleKey then
+        toggleButton.Visible = not toggleButton.Visible
+        if not toggleButton.Visible then
+            frame.Visible = false  -- clean up
+        end
+    end
+end)
+
+-- Done!
