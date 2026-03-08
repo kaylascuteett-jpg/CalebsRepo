@@ -1,42 +1,61 @@
 -- Silent Aim Script with Custom Toggle Button Keybind (Cleaned & Fixed Version)
-
+-- Edited: Added Whitelist/Blacklist textboxes + Specific Player Silent section with lock keybind + notifications
 -- Load the aiming module
 local Aiming = loadstring(game:HttpGet("https://raw.githubusercontent.com/RFS-cmd/-/main/model"))()
-
 -- Highly Optimized Settings (MAX FPS)
-Aiming.TargetPart     = {"UpperTorso"}                    -- Single part = fastest
-Aiming.FOV            = 40
-Aiming.FOVSides       = 30                                -- Low sides = huge FPS boost
-Aiming.FOVColour      = Color3.fromRGB(0, 147, 255)
-Aiming.HitChance      = 123432210000034873243247347324327123  -- Always hit
-Aiming.ShowFOV        = true
-Aiming.VisibleCheck   = false                             -- Off = massive FPS saver
-Aiming.TeamCheck(false)                                   -- No team check
-
-getgenv().Prediction = 0.000001                           -- Default prediction
-
+Aiming.TargetPart = {"UpperTorso"} -- Single part = fastest
+Aiming.FOV = 40
+Aiming.FOVSides = 30 -- Low sides = huge FPS boost
+Aiming.FOVColour = Color3.fromRGB(0, 147, 255)
+Aiming.HitChance = 123432210000034873243247347324327123 -- Always hit
+Aiming.ShowFOV = true
+Aiming.VisibleCheck = false -- Off = massive FPS saver
+Aiming.TeamCheck(false) -- No team check
+getgenv().Prediction = 0.000001 -- Default prediction
 -- Services
-local Players          = game:GetService("Players")
-local Workspace        = game:GetService("Workspace")
-local RunService       = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local LocalPlayer      = Players.LocalPlayer
-local CurrentCamera    = Workspace.CurrentCamera
-
+local LocalPlayer = Players.LocalPlayer
+local CurrentCamera = Workspace.CurrentCamera
 -- Settings
 local DaHoodSettings = {
-    SilentAim      = true,
-    AimLock        = false,
-    Prediction     = getgenv().Prediction,
+    SilentAim = true,
+    AimLock = false,
+    Prediction = getgenv().Prediction,
     AimLockKeybind = Enum.KeyCode.E
 }
 getgenv().DaHoodSettings = DaHoodSettings
 getgenv().SilentAimEnabled = true
 
--- Custom key to toggle visibility of the main "Silent Aim" button
-getgenv().ButtonToggleKey = Enum.KeyCode.RightControl     -- Default: Right Ctrl
+-- NEW: Player filter & Specific Silent settings
+getgenv().UseWhitelist = false
+getgenv().Whitelist = {}
+getgenv().UseBlacklist = false
+getgenv().Blacklist = {}
+getgenv().SpecificSilentEnabled = false
+getgenv().SpecificLockKey = Enum.KeyCode.F
 
--- Improved KO/Grabbed check
+-- Custom key to toggle visibility of the main "Silent Aim" button
+getgenv().ButtonToggleKey = Enum.KeyCode.RightControl -- Default: Right Ctrl
+
+local SpecificLockedPlayer = nil
+
+-- Player filter helper (whitelist = include only these / blacklist = exclude these)
+local function isPlayerAllowed(plr)
+    if not plr then return false end
+    local name = plr.Name
+    if getgenv().UseWhitelist and getgenv().Whitelist and #getgenv().Whitelist > 0 then
+        if not table.find(getgenv().Whitelist, name) then return false end
+    end
+    if getgenv().UseBlacklist and getgenv().Blacklist and #getgenv().Blacklist > 0 then
+        if table.find(getgenv().Blacklist, name) then return false end
+    end
+    return true
+end
+
+-- Improved KO/Grabbed check (now also respects whitelist/blacklist)
 function Aiming.Check()
     if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then
         return false
@@ -44,15 +63,13 @@ function Aiming.Check()
     if not getgenv().SilentAimEnabled then
         return false
     end
-
     local Character = Aiming.Character(Aiming.Selected)
     if not Character then return false end
-
     local BodyEffects = Character:FindFirstChild("BodyEffects")
     local KOd = BodyEffects and BodyEffects:FindFirstChild("K.O") and BodyEffects["K.O"].Value
     local Grabbed = Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
-
     if KOd or Grabbed then return false end
+    if not isPlayerAllowed(Aiming.Selected) then return false end
     return true
 end
 
@@ -81,7 +98,6 @@ end)
 -- Ultra low-lag target & FOV update
 local lastTargetUpdate = 0
 local lastFOVSettings = {Aiming.FOV, Aiming.FOVSides, Aiming.ShowFOV, tostring(Aiming.FOVColour)}
-
 RunService.Heartbeat:Connect(function()
     -- Update FOV circle only when needed
     local currentSettings = {Aiming.FOV, Aiming.FOVSides, Aiming.ShowFOV, tostring(Aiming.FOVColour)}
@@ -89,7 +105,6 @@ RunService.Heartbeat:Connect(function()
         Aiming.UpdateFOV()
         lastFOVSettings = currentSettings
     end
-
     -- Target update ~6-7 times per second (smooth + low CPU)
     local now = tick()
     if now - lastTargetUpdate >= 0.15 then
@@ -97,6 +112,29 @@ RunService.Heartbeat:Connect(function()
         lastTargetUpdate = now
     end
 end)
+
+-- NEW: Override GetClosestPlayerToCursor for Specific Player Silent mode
+local originalGetClosest = Aiming.GetClosestPlayerToCursor
+Aiming.GetClosestPlayerToCursor = function()
+    if getgenv().SpecificSilentEnabled and SpecificLockedPlayer then
+        local char = Aiming.Character(SpecificLockedPlayer)
+        if char then
+            local targetPartName = (typeof(Aiming.TargetPart) == "table" and Aiming.TargetPart[1]) or Aiming.TargetPart
+            local part = char:FindFirstChild(targetPartName)
+            if not part then
+                part = char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
+            end
+            if part then
+                Aiming.Selected = SpecificLockedPlayer
+                Aiming.SelectedPart = part
+                return
+            end
+        end
+        -- Auto-unlock if target is invalid
+        SpecificLockedPlayer = nil
+    end
+    return originalGetClosest()
+end
 
 -- ===== GUI =====
 local gui = Instance.new("ScreenGui")
@@ -143,7 +181,6 @@ local function makeContainer(labelText)
     container.Size = UDim2.fromOffset(240, 50)
     container.BackgroundTransparency = 1
     container.Parent = frame
-
     local label = Instance.new("TextLabel")
     label.Size = UDim2.fromOffset(240, 20)
     label.BackgroundTransparency = 1
@@ -151,7 +188,6 @@ local function makeContainer(labelText)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Text = labelText
     label.Parent = container
-
     return container
 end
 
@@ -166,7 +202,6 @@ local function makeBox(container, default, callback)
     box.Text = tostring(default)
     box.ClearTextOnFocus = false
     box.Parent = container
-
     box.FocusLost:Connect(function()
         local v = tonumber(box.Text)
         if v then callback(v) end
@@ -183,7 +218,6 @@ local function makeToggle(container, default, callback)
     toggle.BorderSizePixel = 0
     toggle.Text = default and "ON" or "OFF"
     toggle.Parent = container
-
     local state = default
     toggle.MouseButton1Click:Connect(function()
         state = not state
@@ -195,7 +229,6 @@ end
 -- Keybind input for toggling the main button visibility
 local function makeKeybindBox()
     local c = makeContainer("Silent Aim Button Keybind")
-
     local keyBox = Instance.new("TextBox")
     keyBox.Size = UDim2.fromOffset(240, 25)
     keyBox.Position = UDim2.new(0, 0, 0, 25)
@@ -205,12 +238,9 @@ local function makeKeybindBox()
     keyBox.Text = getgenv().ButtonToggleKey.Name
     keyBox.ClearTextOnFocus = false
     keyBox.Parent = c
-
     keyBox.FocusLost:Connect(function(enterPressed)
         if not enterPressed then return end
-
         local input = keyBox.Text:lower():gsub("%s+", ""):gsub("[^%w]", "")
-
         local aliases = {
             -- Arrows
             up = "Up", down = "Down", left = "Left", right = "Right",
@@ -239,15 +269,12 @@ local function makeKeybindBox()
             -- Misc
             space = "Space", tilde = "Tilde", minus = "Minus", equals = "Equals",
         }
-
         if aliases[input] then
             input = aliases[input]
         end
-
         local success, key = pcall(function()
             return Enum.KeyCode[input]
         end)
-
         if success and key and key ~= Enum.KeyCode.Unknown then
             getgenv().ButtonToggleKey = key
             keyBox.TextColor3 = Color3.fromRGB(150, 255, 150)
@@ -265,17 +292,132 @@ local function makeKeybindBox()
     end)
 end
 
+-- NEW: Keybind input for Specific Player Lock (duplicate of above but for different var)
+local function makeSpecificLockKeybindBox()
+    local c = makeContainer("Specific Player Lock Keybind")
+    local keyBox = Instance.new("TextBox")
+    keyBox.Size = UDim2.fromOffset(240, 25)
+    keyBox.Position = UDim2.new(0, 0, 0, 25)
+    keyBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    keyBox.TextColor3 = Color3.fromRGB(200, 255, 200)
+    keyBox.BorderSizePixel = 0
+    keyBox.Text = getgenv().SpecificLockKey.Name
+    keyBox.ClearTextOnFocus = false
+    keyBox.Parent = c
+    keyBox.FocusLost:Connect(function(enterPressed)
+        if not enterPressed then return end
+        local input = keyBox.Text:lower():gsub("%s+", ""):gsub("[^%w]", "")
+        local aliases = {
+            -- Arrows
+            up = "Up", down = "Down", left = "Left", right = "Right",
+            -- Modifiers
+            ctrl = "LeftControl", lctrl = "LeftControl", rctrl = "RightControl",
+            control = "LeftControl", alt = "LeftAlt", shift = "LeftShift",
+            -- Special
+            enter = "Return", esc = "Escape", del = "Delete", ins = "Insert",
+            home = "Home", ["end"] = "End", pgup = "PageUp", pgdn = "PageDown",
+            caps = "CapsLock", capslock = "CapsLock",
+            -- Function keys
+            f1 = "F1", f2 = "F2", f3 = "F3", f4 = "F4", f5 = "F5", f6 = "F6",
+            f7 = "F7", f8 = "F8", f9 = "F9", f10 = "F10", f11 = "F11", f12 = "F12",
+            -- Letters
+            a = "A", b = "B", c = "C", d = "D", e = "E", f = "F", g = "G", h = "H",
+            i = "I", j = "J", k = "K", l = "L", m = "M", n = "N", o = "O", p = "P",
+            q = "Q", r = "R", s = "S", t = "T", u = "U", v = "V", w = "W", x = "X",
+            y = "Y", z = "Z",
+            -- Numbers
+            ["1"] = "One", ["2"] = "Two", ["3"] = "Three", ["4"] = "Four", ["5"] = "Five",
+            ["6"] = "Six", ["7"] = "Seven", ["8"] = "Eight", ["9"] = "Nine", ["0"] = "Zero",
+            -- Numpad
+            num0 = "KeypadZero", num1 = "KeypadOne", num2 = "KeypadTwo", num3 = "KeypadThree",
+            num4 = "KeypadFour", num5 = "KeypadFive", num6 = "KeypadSix", num7 = "KeypadSeven",
+            num8 = "KeypadEight", num9 = "KeypadNine",
+            -- Misc
+            space = "Space", tilde = "Tilde", minus = "Minus", equals = "Equals",
+        }
+        if aliases[input] then
+            input = aliases[input]
+        end
+        local success, key = pcall(function()
+            return Enum.KeyCode[input]
+        end)
+        if success and key and key ~= Enum.KeyCode.Unknown then
+            getgenv().SpecificLockKey = key
+            keyBox.TextColor3 = Color3.fromRGB(150, 255, 150)
+            keyBox.Text = key.Name
+        else
+            keyBox.TextColor3 = Color3.fromRGB(255, 150, 150)
+            keyBox.Text = "Invalid"
+            task.delay(1.4, function()
+                if keyBox and keyBox.Parent then
+                    keyBox.TextColor3 = Color3.fromRGB(200, 255, 200)
+                    keyBox.Text = getgenv().SpecificLockKey.Name
+                end
+            end)
+        end
+    end)
+end
+
 -- Create all GUI elements in logical order
 do
-    makeBox(     makeContainer("FOV Size"),      Aiming.FOV,               function(v) Aiming.FOV = v end)
-    makeBox(     makeContainer("Hit Chance"),    Aiming.HitChance,          function(v) Aiming.HitChance = v end)
-    makeBox(     makeContainer("Prediction"),    getgenv().Prediction,      function(v) getgenv().Prediction = v DaHoodSettings.Prediction = v end)
-    makeToggle(  makeContainer("Show FOV"),      Aiming.ShowFOV,            function(v) Aiming.ShowFOV = v end)
-    makeToggle(  makeContainer("Silent Aim"),    true,                      function(v) getgenv().SilentAimEnabled = v end)
-    makeToggle(  makeContainer("Wall Check"),    false,                     function(v) Aiming.VisibleCheck = v end)
-
-    -- Keybind setter at the bottom
+    makeBox( makeContainer("FOV Size"), Aiming.FOV, function(v) Aiming.FOV = v end)
+    makeBox( makeContainer("Hit Chance"), Aiming.HitChance, function(v) Aiming.HitChance = v end)
+    makeBox( makeContainer("Prediction"), getgenv().Prediction, function(v) getgenv().Prediction = v DaHoodSettings.Prediction = v end)
+    makeToggle( makeContainer("Show FOV"), Aiming.ShowFOV, function(v) Aiming.ShowFOV = v end)
+    makeToggle( makeContainer("Silent Aim"), true, function(v) getgenv().SilentAimEnabled = v end)
+    makeToggle( makeContainer("Wall Check"), false, function(v) Aiming.VisibleCheck = v end)
+    
+    -- NEW: Whitelist / Blacklist (exclude/include) textboxes
+    makeToggle(makeContainer("Use Whitelist"), getgenv().UseWhitelist, function(v) getgenv().UseWhitelist = v end)
+    local whitelistContainer = makeContainer("Whitelist Players (comma separated)")
+    local whitelistBox = Instance.new("TextBox")
+    whitelistBox.Size = UDim2.fromOffset(240, 25)
+    whitelistBox.Position = UDim2.new(0, 0, 0, 25)
+    whitelistBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    whitelistBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    whitelistBox.BorderSizePixel = 0
+    whitelistBox.Text = table.concat(getgenv().Whitelist or {}, ", ")
+    whitelistBox.ClearTextOnFocus = false
+    whitelistBox.Parent = whitelistContainer
+    whitelistBox.FocusLost:Connect(function()
+        local text = whitelistBox.Text or ""
+        getgenv().Whitelist = {}
+        for _, name in ipairs(string.split(text, ",")) do
+            local trimmed = name:match("^%s*(.-)%s*$")
+            if trimmed and trimmed ~= "" then
+                table.insert(getgenv().Whitelist, trimmed)
+            end
+        end
+    end)
+    
+    makeToggle(makeContainer("Use Blacklist"), getgenv().UseBlacklist, function(v) getgenv().UseBlacklist = v end)
+    local blacklistContainer = makeContainer("Blacklist Players (comma separated)")
+    local blacklistBox = Instance.new("TextBox")
+    blacklistBox.Size = UDim2.fromOffset(240, 25)
+    blacklistBox.Position = UDim2.new(0, 0, 0, 25)
+    blacklistBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    blacklistBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    blacklistBox.BorderSizePixel = 0
+    blacklistBox.Text = table.concat(getgenv().Blacklist or {}, ", ")
+    blacklistBox.ClearTextOnFocus = false
+    blacklistBox.Parent = blacklistContainer
+    blacklistBox.FocusLost:Connect(function()
+        local text = blacklistBox.Text or ""
+        getgenv().Blacklist = {}
+        for _, name in ipairs(string.split(text, ",")) do
+            local trimmed = name:match("^%s*(.-)%s*$")
+            if trimmed and trimmed ~= "" then
+                table.insert(getgenv().Blacklist, trimmed)
+            end
+        end
+    end)
+    
+    -- NEW: Specific Player Silent section (toggle + keybind)
+    makeToggle(makeContainer("Specific Player Silent"), getgenv().SpecificSilentEnabled, function(v) getgenv().SpecificSilentEnabled = v end)
+    
+    -- Keybind setter at the bottom (original + new)
     makeKeybindBox()
+    makeSpecificLockKeybindBox()
 end
 
 -- Open/close settings frame
@@ -289,7 +431,40 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == getgenv().ButtonToggleKey then
         toggleButton.Visible = not toggleButton.Visible
         if not toggleButton.Visible then
-            frame.Visible = false  -- clean up
+            frame.Visible = false -- clean up
+        end
+    end
+end)
+
+-- NEW: Specific Player Silent hotkey (press F (or your key) while mouse is over a player)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if getgenv().SpecificSilentEnabled and input.KeyCode == getgenv().SpecificLockKey then
+        local mouse = LocalPlayer:GetMouse()
+        local target = mouse.Target
+        if target then
+            local character = target
+            while character and not character:FindFirstChild("Humanoid") and character.Parent do
+                character = character.Parent
+            end
+            local player = character and Players:GetPlayerFromCharacter(character)
+            if player and player ~= LocalPlayer then
+                if SpecificLockedPlayer == player then
+                    SpecificLockedPlayer = nil
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Silent Aim",
+                        Text = "Unlocked from " .. player.Name,
+                        Duration = 2
+                    })
+                else
+                    SpecificLockedPlayer = player
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Silent Aim",
+                        Text = "Locked onto " .. player.Name,
+                        Duration = 2
+                    })
+                end
+            end
         end
     end
 end)
