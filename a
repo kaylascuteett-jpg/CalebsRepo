@@ -1,0 +1,101 @@
+-- LocalScript (place in StarterPlayerScripts)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local macroEnabled = false
+local MACRO_KEY = Enum.KeyCode.X          -- ← change here if needed
+
+-- Optional: tools to unequip automatically when macro starts
+local restrictedTools = {
+    -- "Gun", "Knife", -- add names here if needed
+} 
+
+local function isRestricted(name)
+    for _, bad in ipairs(restrictedTools) do
+        if name == bad then return true end
+    end
+    return false
+end
+
+local function unequipRestricted()
+    local char = player.Character
+    if not char then return end
+    
+    for _, item in char:GetChildren() do
+        if item:IsA("Tool") and isRestricted(item.Name) then
+            item.Parent = player.Backpack
+        end
+    end
+end
+
+-- Free-cam style: rotate character to face camera + partial zoom-in
+local PARTIAL_ZOOM_DISTANCE = 6     -- ← main setting! 4 = closer, 8–10 = looser partial zoom
+                                    -- 0.5 would be full first-person, 12.5 is roughly default
+
+local function applyFreeCamStyle()
+    local char = player.Character
+    if not char then return end
+    
+    local hrp     = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChild("Humanoid")
+    local head    = char:FindFirstChild("Head")
+    
+    if not (hrp and humanoid and head) then return end
+    if humanoid.Sit or humanoid.Health <= 0 then return end
+    
+    -- Rotate character to match camera direction (core free-cam feel)
+    local look = camera.CFrame.LookVector * Vector3.new(1, 0, 1) -- flat plane
+    if look.Magnitude > 0.01 then
+        look = look.Unit
+        hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + look)
+    end
+    
+    -- Optional tiny offset some macros add (feels more "mobile macro")
+    -- Remove/comment if unwanted
+    local isClose = (camera.Focus.Position - camera.CFrame.Position).Magnitude < 10
+    if isClose then
+        camera.CFrame = camera.CFrame * CFrame.new(1.4, 0.15, 0) -- slight right/up nudge
+    end
+end
+
+-----------------------------------------------------------------
+-- Key handling (hold X = macro on)
+-----------------------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == MACRO_KEY then
+        macroEnabled = true
+        unequipRestricted()
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == MACRO_KEY then
+        macroEnabled = false
+    end
+end)
+
+-----------------------------------------------------------------
+-- Main loop – apply free cam + partial zoom while active
+-----------------------------------------------------------------
+RunService.Heartbeat:Connect(function()
+    if not macroEnabled then
+        -- Reset when macro ends (optional – prevents stuck zoom)
+        player.CameraMinZoomDistance = 0.5
+        player.CameraMaxZoomDistance = 400   -- or whatever your game default is
+        return
+    end
+
+    -- Force partial zoom (closer third-person)
+    player.CameraMinZoomDistance = PARTIAL_ZOOM_DISTANCE
+    player.CameraMaxZoomDistance = PARTIAL_ZOOM_DISTANCE   -- locks at exactly this distance
+
+    applyFreeCamStyle()
+end)
+
+print("Partial zoom free-camera macro loaded → hold X to activate")
