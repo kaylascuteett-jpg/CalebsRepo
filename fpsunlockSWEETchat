@@ -1,0 +1,30 @@
+--// Minimal FPS Unlocker LocalScript
+--// Put in StarterPlayerScripts or run via executor
+
+local FPS_TARGET = 9999          -- change to whatever you want (300, 500, 9999, etc.)
+
+-- Most common method used in 2024–2026 Roblox exploits / scripts
+if setfpscap then
+    setfpscap(FPS_TARGET)
+    return
+end
+
+-- Fallback / older method some exploits still support
+if setfps then
+    setfps(FPS_TARGET)
+    return
+end
+
+-- Very last resort — try to force it via render loop timing (almost never works anymore)
+local RunService = game:GetService("RunService")
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    frameCount += 1
+    local now = tick()
+    if now - lastTime >= 1 then
+        frameCount = 0
+        lastTime = now
+    end
+end)
