@@ -379,14 +379,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
                     SpecificLockedPlayer = nil
                     game:GetService("StarterGui"):SetCore("SendNotification", {
                         Title = "Caleb's Silent Aim",
-                        Text = "Unlocked from " .. player.Name,
+                        Text = "Unlocked from " .. player.DisplayName,
                         Duration = 1.8
                     })
                 else
                     SpecificLockedPlayer = player
                     game:GetService("StarterGui"):SetCore("SendNotification", {
                         Title = "Caleb's Silent Aim",
-                        Text = "Locked onto " .. player.Name,
+                        Text = "Locked onto " .. player.DisplayName,
                         Duration = 1.8
                     })
                 end
